@@ -28,9 +28,9 @@ void KalmanFilter::Update(const VectorXd &z) {
   VectorXd z_pred = H_ * x_;
   VectorXd y = z - z_pred;
   MatrixXd Ht = H_.transpose();
-  MatrixXd S = H_ * P_ * Ht + R_;
-  MatrixXd Si = S.inverse();
   MatrixXd PHt = P_ * Ht;
+  MatrixXd S = H_ * PHt + R_;
+  MatrixXd Si = S.inverse();
   MatrixXd K = PHt * Si;
 
   //new state
@@ -43,13 +43,20 @@ void KalmanFilter::Update(const VectorXd &z) {
 void KalmanFilter::UpdateEKF(const VectorXd &z) {
   //convert to polar coordinates
   VectorXd Hx = VectorXd(3);
+  //checks to make sure x_ and y_ are greater than .0001 to avoid arithmetic errors
+  if ( x_[0] < 0.0001)
+  {
+    x_[0] = 0.0001;
+  }
+
   Hx << sqrt(pow(x_[0],2) + pow(x_[1],2)), atan(x_[1]/x_[0]), (x_[0]* x_[2] + x_[1]*x_[3])/ sqrt(pow(x_[0],2) + pow(x_[1],2));
   VectorXd y = z - Hx;
   //H_ is set to Jacobian in FusionEKF
   MatrixXd Ht = H_.transpose();
-  MatrixXd S = H_ * P_ * Ht + R_;
+  MatrixXd PHt = P_ * Ht;
+  MatrixXd S = H_ * PHt + R_;
   MatrixXd Si = S.inverse();
-  MatrixXd K = P_ * Ht * Si;
+  MatrixXd K = PHt * Si;
 
   //new estimate
   x_ = x_ +  (K * y);
